@@ -5,16 +5,27 @@ import scriptcontext as sc
 import rhinoscriptsyntax as rs
 
 
-filePath = "/Users/sjo/Desktop/Hackathon/Testfile.pdf"
+filePath = "/Users/sjo/Desktop/Hackathon/Bridg-it/Research/Test1.pdf"
 
 def extract_comments(path):
     comments = []
+    marker = []
     
     with open(path, "rb") as file:
         reader = pdf.PdfReader(file)
         
+        
         for page_num in range(len(reader.pages)):
             page = reader.pages[page_num]
+            textOnPage = page.extract_text()
+
+            
+            for text in textOnPage.split("\n"):
+
+                if text[:10] == "*BRIDGEIT*":
+                    marker.append(text)
+            
+            print(marker)
             pageSize = page.mediabox
 
             pageOrigin = (pageSize[0], pageSize[1])
@@ -79,27 +90,26 @@ def extract_comments(path):
 
 def addTextObjects(Annotations, pageRec, targetRec):
 
-    #SCALE
+    #####SCALE
     inputWidth = pageRec.Width
     inputHeight = pageRec.Height
     
     targetWidth = targetRec.Width
     targetHeight = targetRec.Height
 
-    
     scaleX = targetWidth / inputWidth
     scaleY = targetHeight / inputHeight
 
-    #TRANSLATION
+    #####TRANSLATION
     inputCenter = pageRec.Center
     targetCenter = targetRec.Center
     translation = targetCenter - inputCenter
 
-    print(type(inputCenter))
-    print(type(scaleX))
-    print(type(scaleY))
+    print(inputCenter)
+    print(scaleX)
+    print(scaleY)
 
-    #ROTATION
+    #####ROTATION
     inputPlane = pageRec.Plane
     targetPlane = targetRec.Plane
     rotation = rg.Transform.Rotation(inputPlane.XAxis, inputPlane.XAxis, inputCenter)
@@ -109,7 +119,8 @@ def addTextObjects(Annotations, pageRec, targetRec):
     #####TRANSFORMATION
     transformation = rg.Transform.Translation(translation)
     transformation *= rotation
-    #scale
+    #transformation *= rg.Transform.Scale(inputCenter, scaleX, scaleX)
+    
 
     print(rotation)
     for comment in Annotations:
