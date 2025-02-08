@@ -71,12 +71,6 @@ class PDFIO(object):
 
         hashTextObjectId = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(bridgeHash, hashPlane, hashHeight, hashFont, False, True)
 
-        fakePlane = rg.Plane.WorldXY
-        fakePlane.Origin = rg.Point3d(50.0, 100.0, 0.0)
-        fakeTextContent = self.GetLoremIpsum()
-
-
-        fakeText = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(fakeTextContent, fakePlane, hashHeight, hashFont, False, False)
         return hashTextObjectId
 
 
