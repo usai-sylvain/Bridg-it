@@ -21,6 +21,8 @@ def extract_comments(path):
             pageTopLeft = (pageSize[0], pageSize[3])
             pageLowRight = (pageSize[0], pageSize[2])
 
+            pageRec = rg.Rectangle3d(rg.Plane.WorldXY, pageSize[2], pageSize[3])
+
             print(pageOrigin)
             print(pageTopLeft)
             print(pageLowRight)
@@ -73,9 +75,43 @@ def extract_comments(path):
                         #print("noComment")
                         #revisit: what happens when there is no comment?
 
-    return comments
+    return comments, pageRec
 
-def addTextObjects(Annotations):
+def addTextObjects(Annotations, pageRec, targetRec):
+
+    #SCALE
+    inputWidth = pageRec.Width
+    inputHeight = pageRec.Height
+    
+    targetWidth = targetRec.Width
+    targetHeight = targetRec.Height
+
+    
+    scaleX = targetWidth / inputWidth
+    scaleY = targetHeight / inputHeight
+
+    #TRANSLATION
+    inputCenter = pageRec.Center
+    targetCenter = targetRec.Center
+    translation = targetCenter - inputCenter
+
+    print(type(inputCenter))
+    print(type(scaleX))
+    print(type(scaleY))
+
+    #ROTATION
+    inputPlane = pageRec.Plane
+    targetPlane = targetRec.Plane
+    rotation = rg.Transform.Rotation(inputPlane.XAxis, inputPlane.XAxis, inputCenter)
+    rotation *= rg.Transform.Rotation(targetPlane.YAxis, targetPlane.YAxis, targetCenter)
+
+
+    #####TRANSFORMATION
+    transformation = rg.Transform.Translation(translation)
+    transformation *= rotation
+    #scale
+
+    print(rotation)
     for comment in Annotations:
         location = rg.Point3d(comment[0][0], comment[0][1], 0)
         text_dot = rg.TextDot(f"{comment[2]} ({comment[3]}): {comment[1]}", location)
@@ -87,14 +123,21 @@ def addTextObjects(Annotations):
     sc.doc.Views.Redraw()
     
 
+planeOrigin = rg.Point3d(0,0,0)
+planeX = rg.Point3d(1,5,0)
+planeY = rg.Point3d(0,1,0.3)
+
+plane = rg.Plane.CreateFromPoints(planeOrigin, planeX, planeY)
+dummyRec = rg.Rectangle3d(plane, 29.7, 21.0)
+sc.doc.Objects.AddRectangle(dummyRec)
 
 
 
-
-pdfAnnotations = extract_comments(filePath)
-addTextObjects(pdfAnnotations)
-
+pdfAnnotations, pageRec = extract_comments(filePath)
+addTextObjects(pdfAnnotations, pageRec, dummyRec)
+sc.doc.Objects.AddRectangle(pageRec)
 print("done")
-"""for comment in pdfAnnotations:
+"""
+for comment in pdfAnnotations:
     print(comment)
 """
