@@ -43,7 +43,7 @@ class PDFIO(object):
         self.Export(page)
 
         # delete the hash text
-
+        rs.DeleteObject(hashTextId)
 
         # rs.AddPlaneSurface(coordinate, 500, 500)
     
