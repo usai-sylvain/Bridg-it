@@ -25,12 +25,14 @@ def getMarker(path):
 
 
 
-class Bridgit:
+class Bridgit(object):
     def __init__(self):
         self.comment = []
         self.author = []
+        self.time = []
         self.location = None
         self.marker = None
+        self.annotationType = []
 
     def extractInformation(self, filePath):
         with open(filePath, "rb") as file:
@@ -54,12 +56,12 @@ class Bridgit:
                 if "/Annots" in page:
                     for annot in page["/Annots"]:
                         annotation = annot.get_object()
-                        print(annotation)
+                        print(annotation)q
                         
 
                         comment = annotation.get("/Contents", "").strip()
                         creationTime = annotation.get('/CreationDate',"").strip()
-                        autor = annotation.get('/T',"").strip()
+                        author = annotation.get('/T',"").strip()
                         annotationType = annotation.get("/Subtype","").strip()
 
 
@@ -89,15 +91,18 @@ class Bridgit:
 
                             self.location = position
                             self.author = author
+                            self.time = formatedTime
+                            self.marker = arrowStart
+                            self.annotationType = annotationType
 
-                            comments.append((position, comment, autor, formatedTime, annotationType, arrowStart))
+                            #comments.append((position, comment, autor, formatedTime, annotationType, arrowStart))
 
                         else:
                             pass
                             #print("noComment")
                             #revisit: what happens when there is no comment?
 
-        return comments, pageRec
+        return "done"
 
 def extract_comments(path):
     comments = []
@@ -164,6 +169,8 @@ def extract_comments(path):
                         #revisit: what happens when there is no comment?
 
     return comments, pageRec
+
+
 
 def addTextObjects(Annotations, pageRec, targetRec):
 
