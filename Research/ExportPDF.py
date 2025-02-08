@@ -14,21 +14,72 @@ def Execute():
     
     # exporter.Export()
 
-class PDFExporter():
+class PDFExporter(object):
+
+    def __init__(self):
+        # check requirements 
+        if Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem != Rhino.UnitSystem.Millimeters : 
+            print("ExportPDF.Warning : model unit is not in mm !")
+
+        # set the DPI value 
+        self.PDF_DPI = 72
+        
 
 
     def Sandbox(self):
         # get all view pages 
         page = self.GetAllPageViews()[0]
         
-        detailView = page.GetDetailViews()[0]
-        self.DEBUG_3dSpaceToPage(detailView)
+        detailViews = page.GetDetailViews()
+        detailView = detailViews[0]
+        # self.DEBUG_3dSpaceToPage(detailView)
 
-        
+        hashTextId = self.CreateHashText(detailView)
+
+        # export 
+        self.Export(page)
+
+        # delete the hash text
+
 
         # rs.AddPlaneSurface(coordinate, 500, 500)
+    
+    def CreateHashText(self, detailView):
+        corners = self.GetPageCornersFromDetailView(detailView)
+        # get the corner hash 
+        cornerHashes = []
+        for i, corner in enumerate(corners) : 
+            hash = self.HashCorner(corner, i)
+            # print hash
+            cornerHashes.append(hash)
+            
+        bridgeHash = "*BRIDGEIT*%s"%("%".join(cornerHashes[0:3]))
 
-    def Export(self):
+        # make the page viewport active 
+        page = self.GetPageViewFromDetailView(detailView)
+
+        Rhino.RhinoDoc.ActiveDoc.Views.ActiveView = page
+        # add a text in the page for the first three corners 
+    
+        hashPlane = rg.Plane.WorldXY
+        hashPlane.Origin = rg.Point3d(10.0, 10.0, 0.0)
+        hashHeight = 1.0
+        hashFont = "Arial"
+
+        hashTextObjectId = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(bridgeHash, hashPlane, hashHeight, hashFont, False, True)
+
+        fakePlane = rg.Plane.WorldXY
+        fakePlane.Origin = rg.Point3d(50.0, 100.0, 0.0)
+        fakeTextContent = self.GetLoremIpsum()
+
+
+        fakeText = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(fakeTextContent, fakePlane, hashHeight, hashFont, False, False)
+        return hashTextObjectId
+
+
+
+
+    def Export(self, rhinoPage):
 
         # get a target path for our padf
         exportPath = self.GetExportPath()
@@ -40,9 +91,11 @@ class PDFExporter():
         # create a new instance of RhinoPDF exporter
         pdf = Rhino.FileIO.FilePdf.Create()
 
-        newPage = "create a new page here"
+        # make the detail page active 
+        Rhino.RhinoDoc.ActiveDoc.Views.ActiveView = rhinoPage
+        captureSettings = Rhino.Display.ViewCaptureSettings(rhinoPage, self.PDF_DPI)
+        pdf.AddPage(captureSettings)
         
-        pdf.AddPage(newPage)
         pdf.Write(exportPath)
 
 
@@ -67,8 +120,6 @@ class PDFExporter():
         # get the Camera plane from the viewport
         cameraPlane = self.GetRhinoViewportCameraPlane(viewport)
         scale = self.GetDetailToModelScale(detailViewObject)
-        unitFactor = self.GetUnitScaleFactor()
-        print scale, unitFactor
         
         rhinoPageView = self.GetPageViewFromDetailView(detailViewObject)
         # get the page size 
@@ -76,13 +127,19 @@ class PDFExporter():
         height = rhinoPageView.PageHeight
         
                 
-        realWidth = width   * scale * unitFactor
-        realHeight = height * scale * unitFactor
+        realWidth = width   * scale 
+        realHeight = height * scale 
 
         # create a debug surface 
         pageRectangle = rg.Rectangle3d(cameraPlane, rg.Interval(-realWidth * 0.5, realWidth * 0.5), rg.Interval(-realHeight * 0.5, realHeight * 0.5))
         corners = [pageRectangle.Corner(i) for i in range(4)]
         return corners
+    
+    def HashCorner(self, corner, cornerIndex):
+        """convert a corner to a hash string            
+        """
+        return "I%s_X%.10f_Y%.10f_Z%.10f"%(cornerIndex, corner.X, corner.Y, corner.Z)
+    
     
     def CreatePagePlaneFromPageCorner(self, pageCorners):
         """Return a plane created from the page corners. 
@@ -102,12 +159,10 @@ class PDFExporter():
         """
         pageCorners = self.GetPageCornersFromDetailView(detailView)
         pagePlane = self.CreatePagePlaneFromPageCorner(pageCorners)
+        origin = pagePlane.Origin
 
         otherScale = self.GetModelToDetailScale(detailView)
-        unitFactor = self.GetUnitScaleFactor()
-
-        otherScale = otherScale * unitFactor
-
+        
         dbugSrf100 = rg.PlaneSurface(pagePlane, rg.Interval(0.0, width/otherScale), rg.Interval(0.0, height/otherScale))
         doc.Objects.AddSurface(dbugSrf100)
 
@@ -136,15 +191,19 @@ class PDFExporter():
         return scale
     
     def GetUnitScaleFactor(self):
+        # we don't solve that at the moment
+        return 1 
         unitFactor = Rhino.RhinoMath.UnitScale(Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem, Rhino.UnitSystem.Millimeters) 
         return unitFactor
 
     
     def GetModelToDetailScale(self, detailViewObject):
-        scaleType = detailViewObject.ScaleFormat.PageLengthToOne
+        # scaleType = detailViewObject.ScaleFormat.PageLengthToOne
         # get the detail view scale 
-        success, scaleString = detailViewObject.GetFormattedScale(scaleType)
-        scale = float(scaleString.split(":")[0])
+        success, scale= detailViewObject.GetFormattedScale(0)
+        scale = float(scale)
+        scale = scale
+
         return scale
 
     def GetRhinoViewportCameraPlane(self, RhinoViewport):
@@ -153,12 +212,18 @@ class PDFExporter():
         Args:
             RhinoViewport (RhinoViewport): a rhino viewport
         """
+        
+
         # retrieve the camera plane 
-        origin = RhinoViewport.CameraTarget
+        origin = RhinoViewport.CameraTarget 
         xAxis = RhinoViewport.CameraX
         yAxis = RhinoViewport.CameraY
-        zAxis = RhinoViewport.CameraZ            
-        
+        zAxis = RhinoViewport.CameraZ
+
+        # region ----- debug geometry  ----- 
+        # self.AdvanceBakePoint(origin, "CameraOrigin", (255, 0, 0))
+        # endregion ----- debug geometry  ----- 
+
         cameraPlane = rg.Plane(origin, xAxis, yAxis)
         return cameraPlane
 
@@ -176,9 +241,16 @@ class PDFExporter():
         return fullPath
 
 
-        
+    @classmethod
+    def AdvanceBakePoint(cls, point, name = None, color= None):
+        pointId = doc.Objects.AddPoint(point)
+        if name : rs.ObjectName(pointId, name)
+        if color : rs.ObjectColor(pointId, color)
+        return pointId
 
 
+    def GetLoremIpsum(self):
+        return "Artificial amateurs aren't at all amazing \nAnalytically, I assault, animate things \nBroken barriers bounded by the bomb beat \nBuildings are broken, basically I'm bombarding \nCasually create catastrophes, casualties \nCanceling cats, got their canopies collapsing \nDetonate \na dime of dank daily doin' dough \nDemonstrations, Don Dada on the down low \nEating other editors with each and every energetic \nEpileptic episode, elevated etiquette \nFurious, fat, \nfabulous, fantastic"
 
 
 
