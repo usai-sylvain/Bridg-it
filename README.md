@@ -17,7 +17,10 @@ Bridge-it aims to bring these annotations and comments back in the 3D model the 
 
 ## Import and orient PDFs 
 * identify our hashed markers in existing pdfs
-* orient and scale the pdf in 3D space 
+* orient and scale the pdf in 3D space
+
+## Store Guid of rhino object in the pdf ?
+* can we store Rhino Guids in the pdf drawing.
 
 ## Identify comments and annotations objects from the pdf 
 * what is a comment object ? 
