@@ -404,9 +404,10 @@ class PDFIO(object):
 
         for annot in annotations:
             annotation = annot.get_object()
-            print(annotation)
         
             comment = annotation.get("/Contents", "").strip()
+            if comment == "" :
+                continue
             creationTime = annotation.get('/CreationDate',"").strip()
             author = annotation.get('/T',"").strip()
             annotationType = annotation.get("/Subtype","").strip()
@@ -419,13 +420,8 @@ class PDFIO(object):
                 x = (x1 + x2) / 2 
                 y = (y1 + y2) / 2 
 
-                print(type(x))
-                print(type(y))
                 fx = float(x)
                 fy = float(y)
-
-                print(type(fx))
-                print(type(fy))
                 
                 position = rg.Point3d(fx,fy, 0)
             
