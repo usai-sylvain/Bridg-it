@@ -5,19 +5,22 @@ from scriptcontext import doc
 import System 
 import Rhino.Geometry as rg
 import PyPDF2 as pdf
+from enum import Enum
 import datetime
 import Comment
 # requirements: pyPDF2
 
 def ExecuteExportPDF():
     exporter = PDFIO()
- 
     exporter.Execute()
 
 def ExecuteImportPDF():
     importer = PDFIO()
     importer.ExecuteImport()
 
+
+def main():
+    ExecuteExportPDF()
     
 
 class PDFIO(object):
@@ -42,6 +45,7 @@ class PDFIO(object):
         # self.DEBUG_3dSpaceToPage(detailView)
 
         hashTextId = self.CreateHashText(detailView)
+    
 
         # export 
         self.Export(page)
@@ -242,7 +246,7 @@ class PDFIO(object):
     def GetModelToDetailScale(self, detailViewObject):
         # scaleType = detailViewObject.ScaleFormat.PageLengthToOne
         # get the detail view scale 
-        success, scale= detailViewObject.GetFormattedScale(0)
+        success, scale= detailViewObject.GetFormattedScale(Rhino.DocObjects.DetailViewObject.ScaleFormat(0))
         scale = float(scale)
         scale = scale
 
@@ -466,5 +470,4 @@ class PDFIO(object):
 
 
 if __name__ == "__main__":
-    # ExecuteExportPDF()
-    ExecuteImportPDF()
+    main()
