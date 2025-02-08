@@ -67,6 +67,13 @@ class PDFExporter(object):
         hashFont = "Arial"
 
         hashTextObjectId = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(bridgeHash, hashPlane, hashHeight, hashFont, False, True)
+
+        fakePlane = rg.Plane.WorldXY
+        fakePlane.Origin = rg.Point3d(50.0, 100.0, 0.0)
+        fakeTextContent = self.GetLoremIpsum()
+
+
+        fakeText = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(fakeTextContent, fakePlane, hashHeight, hashFont, False, False)
         return hashTextObjectId
 
 
@@ -242,6 +249,8 @@ class PDFExporter(object):
         return pointId
 
 
+    def GetLoremIpsum(self):
+        return "Artificial amateurs aren't at all amazing \nAnalytically, I assault, animate things \nBroken barriers bounded by the bomb beat \nBuildings are broken, basically I'm bombarding \nCasually create catastrophes, casualties \nCanceling cats, got their canopies collapsing \nDetonate \na dime of dank daily doin' dough \nDemonstrations, Don Dada on the down low \nEating other editors with each and every energetic \nEpileptic episode, elevated etiquette \nFurious, fat, \nfabulous, fantastic"
 
 
 
