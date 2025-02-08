@@ -22,8 +22,7 @@ class PDFExporter():
         page = self.GetAllPageViews()[0]
         
         detailView = page.GetDetailViews()[0]
-        page2 = self.GetPageViewFromDetailView(detailView)
-        print page.PageName, page2.PageName
+        self.DEBUG_3dSpaceToPage(detailView)
 
         
 
@@ -68,6 +67,8 @@ class PDFExporter():
         # get the Camera plane from the viewport
         cameraPlane = self.GetRhinoViewportCameraPlane(viewport)
         scale = self.GetDetailToModelScale(detailViewObject)
+        unitFactor = self.GetUnitScaleFactor()
+        print scale, unitFactor
         
         rhinoPageView = self.GetPageViewFromDetailView(detailViewObject)
         # get the page size 
@@ -75,20 +76,41 @@ class PDFExporter():
         height = rhinoPageView.PageHeight
         
                 
-        realWidth = width   * scale
-        realHeight = height * scale
+        realWidth = width   * scale * unitFactor
+        realHeight = height * scale * unitFactor
 
         # create a debug surface 
-        dbugSrf = rg.PlaneSurface(cameraPlane, rg.Interval(-realWidth * 0.5, realWidth * 0.5), rg.Interval(-realHeight * 0.5, realHeight * 0.5))
-        doc.Objects.AddSurface(dbugSrf)
+        pageRectangle = rg.Rectangle3d(cameraPlane, rg.Interval(-realWidth * 0.5, realWidth * 0.5), rg.Interval(-realHeight * 0.5, realHeight * 0.5))
+        corners = [pageRectangle.Corner(i) for i in range(4)]
+        return corners
+    
+    def CreatePagePlaneFromPageCorner(self, pageCorners):
+        """Return a plane created from the page corners. 
+        Assuming that : 
+        Corner0 is the lower left (origin of the plane)
+        Corner1 is the lower right (XAxis of the plane)
+        corner3 (!not 2!) is the top left corner (YAxis of the page)
+        """
+        origin = pageCorners[0]
+        xAxis = pageCorners[1] - origin
+        yAxis = pageCorners[3] - origin 
+        pagePlane = rg.Plane(origin, xAxis, yAxis)
+        return pagePlane
+    
+    def DEBUG_3dSpaceToPage(self, detailView, width=100, height=100):
+        """add a plane surface with a known "page size" in the 3d model. If the object measurements in page space are 100x100, this is a success.
+        """
+        pageCorners = self.GetPageCornersFromDetailView(detailView)
+        pagePlane = self.CreatePagePlaneFromPageCorner(pageCorners)
 
-        otherScale = self.GetModelToDetailScale(detailViewObject)
+        otherScale = self.GetModelToDetailScale(detailView)
+        unitFactor = self.GetUnitScaleFactor()
 
-        print(scale, otherScale)
-        dbugSrf10 = rg.PlaneSurface(cameraPlane, rg.Interval(-10 * 0.5 / otherScale, 10 * 0.5 / otherScale), rg.Interval(-10 * 0.5 / otherScale, 10 * 0.5 / otherScale))
-        doc.Objects.AddSurface(dbugSrf10)
+        otherScale = otherScale * unitFactor
 
-        return cameraPlane
+        dbugSrf100 = rg.PlaneSurface(pagePlane, rg.Interval(0.0, width/otherScale), rg.Interval(0.0, height/otherScale))
+        doc.Objects.AddSurface(dbugSrf100)
+
     
     def GetPageViewFromDetailView(self, detailViewObject):
         """I didn't find a way to get the page information from a detail view so i'll look 
@@ -112,6 +134,11 @@ class PDFExporter():
         success, scaleString = detailViewObject.GetFormattedScale(scaleType)
         scale = float(scaleString.split(":")[-1])
         return scale
+    
+    def GetUnitScaleFactor(self):
+        unitFactor = Rhino.RhinoMath.UnitScale(Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem, Rhino.UnitSystem.Millimeters) 
+        return unitFactor
+
     
     def GetModelToDetailScale(self, detailViewObject):
         scaleType = detailViewObject.ScaleFormat.PageLengthToOne
