@@ -22,7 +22,7 @@ def extract_comments(path):
 
 
                     comment = annotation.get("/Contents", "").strip()
-                    creationDate = annotation.get('/CreationDate',"").strip()
+                    creationTime = annotation.get('/CreationDate',"").strip()
                     autor = annotation.get('/T',"").strip()
                     annotationType = annotation.get("/Subtype","").strip()
 
@@ -30,8 +30,7 @@ def extract_comments(path):
 
                     print(annotationType)
                     print(autor)
-                    print(type(creationDate))
-                    print(datetime.strptime(creationDate, "%Y%m%d%H%M%S"))
+
 
                     
                     if "/Rect" in annotation:
@@ -45,7 +44,7 @@ def extract_comments(path):
                         position = "Unknown" #revisit: what happens after this?
 
                     if comment:
-                        comments.append((position, comment, autor, annotationType))
+                        comments.append((position, comment, autor, creationTime[2:], annotationType))
 
                     else:
                         pass
