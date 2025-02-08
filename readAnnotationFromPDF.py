@@ -12,12 +12,10 @@ def getMarker(path):
     with open(path, "rb") as file:
         reader = pdf.PdfReader(file)
         
-        
         for page_num in range(len(reader.pages)):
             page = reader.pages[page_num]
             textOnPage = page.extract_text()
 
-            
             for text in textOnPage.split("\n"):
 
                 if text[:10] == "*BRIDGEIT*":
@@ -26,9 +24,83 @@ def getMarker(path):
     return marker[0]
 
 
+
+class Bridgit:
+    def __init__(self):
+        self.comment = []
+        self.author = []
+        self.location = None
+        self.marker = None
+
+    def extractInformation(self, filePath):
+        with open(filePath, "rb") as file:
+            reader = pdf.PdfReader(file)
+            
+            
+            for page_num in range(len(reader.pages)):
+                page = reader.pages[page_num]
+                pageSize = page.mediabox
+
+                pageOrigin = (pageSize[0], pageSize[1])
+                pageTopLeft = (pageSize[0], pageSize[3])
+                pageLowRight = (pageSize[0], pageSize[2])
+
+                pageRec = rg.Rectangle3d(rg.Plane.WorldXY, float(pageSize[2]), float(pageSize[3]))
+
+                print(pageOrigin)
+                print(pageTopLeft)
+                print(pageLowRight)
+                
+                if "/Annots" in page:
+                    for annot in page["/Annots"]:
+                        annotation = annot.get_object()
+                        print(annotation)
+                        
+
+                        comment = annotation.get("/Contents", "").strip()
+                        creationTime = annotation.get('/CreationDate',"").strip()
+                        autor = annotation.get('/T',"").strip()
+                        annotationType = annotation.get("/Subtype","").strip()
+
+
+                        if "/Rect" in annotation:
+                            rect = annotation["/Rect"]
+                            #print(rect)
+                            x1, y1, x2, y2 = rect
+                            x = (x1 + x2) / 2 
+                            y = (y1 + y2) / 2 
+                            position = (float(x),float(y))
+                        else:
+                            position = "unknown" #revisit: what happens after this?
+
+                        
+                        if "/CL" in annotation:
+                            arrowStartX = float(annotation["/CL"][0])
+                            arrowStartY = float(annotation["/CL"][1])
+                            arrowStart = (arrowStartX, arrowStartY)
+                        
+                        else:
+                            arrowStart = None
+
+
+                        if comment:
+                            date = datetime.strptime(creationTime[2:10], "%Y%m%d")
+                            formatedTime = date.strftime("%m.%d.%Y")
+
+                            self.location = position
+                            self.author = author
+
+                            comments.append((position, comment, autor, formatedTime, annotationType, arrowStart))
+
+                        else:
+                            pass
+                            #print("noComment")
+                            #revisit: what happens when there is no comment?
+
+        return comments, pageRec
+
 def extract_comments(path):
     comments = []
-    marker = []
     
     with open(path, "rb") as file:
         reader = pdf.PdfReader(file)
@@ -36,22 +108,13 @@ def extract_comments(path):
         
         for page_num in range(len(reader.pages)):
             page = reader.pages[page_num]
-            textOnPage = page.extract_text()
-
-            
-            for text in textOnPage.split("\n"):
-
-                if text[:10] == "*BRIDGEIT*":
-                    marker.append(text)
-            
-            print(marker)
             pageSize = page.mediabox
 
             pageOrigin = (pageSize[0], pageSize[1])
             pageTopLeft = (pageSize[0], pageSize[3])
             pageLowRight = (pageSize[0], pageSize[2])
 
-            pageRec = rg.Rectangle3d(rg.Plane.WorldXY, pageSize[2], pageSize[3])
+            pageRec = rg.Rectangle3d(rg.Plane.WorldXY, float(pageSize[2]), float(pageSize[3]))
 
             print(pageOrigin)
             print(pageTopLeft)
@@ -60,17 +123,13 @@ def extract_comments(path):
             if "/Annots" in page:
                 for annot in page["/Annots"]:
                     annotation = annot.get_object()
-                    #print(annotation)
-
+                    print(annotation)
+                    
 
                     comment = annotation.get("/Contents", "").strip()
                     creationTime = annotation.get('/CreationDate',"").strip()
                     autor = annotation.get('/T',"").strip()
                     annotationType = annotation.get("/Subtype","").strip()
-
-                    #date = datetime.strptime(creationTime[2:10], "%Y%m%d")
-                    #print(creationTime[2:10])
-                    
 
 
                     if "/Rect" in annotation:
@@ -83,13 +142,12 @@ def extract_comments(path):
                     else:
                         position = "unknown" #revisit: what happens after this?
 
-
                     
                     if "/CL" in annotation:
                         arrowStartX = float(annotation["/CL"][0])
                         arrowStartY = float(annotation["/CL"][1])
                         arrowStart = (arrowStartX, arrowStartY)
-
+                    
                     else:
                         arrowStart = None
 
@@ -139,9 +197,7 @@ def addTextObjects(Annotations, pageRec, targetRec):
     transformation = rg.Transform.Translation(translation)
     transformation *= rotation
     #transformation *= rg.Transform.Scale(inputCenter, scaleX, scaleX)
-    
 
-    print(rotation)
     for comment in Annotations:
         location = rg.Point3d(comment[0][0], comment[0][1], 0)
         text_dot = rg.TextDot(f"{comment[2]} ({comment[3]}): {comment[1]}", location)
@@ -152,6 +208,10 @@ def addTextObjects(Annotations, pageRec, targetRec):
             
     sc.doc.Views.Redraw()
     
+
+
+
+
 
 planeOrigin = rg.Point3d(0,0,0)
 planeX = rg.Point3d(1,5,0)
@@ -166,12 +226,9 @@ sc.doc.Objects.AddRectangle(dummyRec)
 pdfAnnotations, pageRec = extract_comments(filePath)
 addTextObjects(pdfAnnotations, pageRec, dummyRec)
 sc.doc.Objects.AddRectangle(pageRec)
-print("done")
+
 
 for comment in pdfAnnotations:
     print(comment)
 
 
-mark = getMarker(filePath)
-
-print(mark)
