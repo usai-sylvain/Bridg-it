@@ -315,18 +315,23 @@ class PDFIO(object):
         corners = self.UnhashCornerString(marker)
         origin = corners[0]
         xAxis = corners[1] - corners[0]
-        yAxis = corners[2] - corners[0]
-
+        yAxis = corners[2] - corners[1]
+        
         oppositeCorner = origin + xAxis + yAxis
+        rs.AddPoint(oppositeCorner)
         orientationPlane = rg.Plane(origin, xAxis, yAxis)
         
+        
         orientationRect = rg.Rectangle3d(orientationPlane, origin, oppositeCorner)
-
+        rs.AddRectangle(orientationPlane, orientationRect.Width, orientationRect.Height)
+        
         pageRect = self.GetPageRect(page)
+        rs.AddRectangle(rg.Plane.WorldXY, pageRect.Width, pageRect.Height)
 
         planeToPlane = rg.Transform.PlaneToPlane(pageRect.Plane, orientationRect.Plane)
         scaleTransformation = rg.Transform.Scale(orientationRect.Plane.Origin, orientationRect.Width/pageRect.Width)
         fullTransformation = scaleTransformation * planeToPlane
+        print(fullTransformation)
     
         self.ExtractCommentsFromPdf(pdfAnnotations, fullTransformation)
         
