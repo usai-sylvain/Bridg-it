@@ -5,7 +5,8 @@ from scriptcontext import doc
 import System 
 import Rhino.Geometry as rg
 import PyPDF2 as pdf
-
+import datetime
+import Comment
 # requirements: pyPDF2
 
 def ExecuteExportPDF():
@@ -146,7 +147,7 @@ class PDFIO(object):
         returns a list of 3 point3d : lowerLeft, lowerRight, TopLeft
         """
         # get rid of the marker key 
-        hashString = hashString.Replace(self.MARKER_KEY, "")
+        hashString = hashString.replace(self.MARKER_KEY, "")
         # split with delimiter 
         hashCorners = hashString.split("%")
 
@@ -162,10 +163,10 @@ class PDFIO(object):
 
             for part in cornerParts : 
                 # retrieve the marker 
-                marker = int(part[:1])
+                marker = part[:1]
                 value = float(part[1:])
                 if marker == "I" : 
-                    index = value
+                    index = int(value)
                 if marker == "X" : 
                     x = value
                 if marker == "Y" : 
@@ -306,15 +307,39 @@ class PDFIO(object):
         # get a path
         path = self.GetImportPath()
         # find the page 
-        page = self.ReadPDFPage(path)
+        page, pdfText, pdfAnnotations = self.ReadPDFPage(path)
 
         # find the marker text 
-        marker = self.GetBridgeItMarkerFromPDF(page)
+        marker = self.GetBridgeItMarkerFromPDF(pdfText)
 
         corners = self.UnhashCornerString(marker)
+        origin = corners[0]
+        xAxis = corners[1] - corners[0]
+        yAxis = corners[2] - corners[0]
+
+        oppositeCorner = origin + xAxis + yAxis
+        orientationPlane = rg.Plane(origin, xAxis, yAxis)
         
-        orientationPlane = rg.Plane(corners[0], corners[1] - corners[0], corners[2] - corners[0])
+        orientationRect = rg.Rectangle3d(orientationPlane, origin, oppositeCorner)
+
+        pageRect = self.GetPageRect(page)
+
+        planeToPlane = rg.Transform.PlaneToPlane(pageRect.Plane, orientationRect.Plane)
+        scaleTransformation = rg.Transform.Scale(orientationRect.Plane.Origin, orientationRect.Width/pageRect.Width)
+        fullTransformation = scaleTransformation * planeToPlane
+    
+        self.ExtractCommentsFromPdf(pdfAnnotations, fullTransformation)
         
+
+    def GetPageRect(self, page):
+        pageSize = page.mediabox
+
+        pageOrigin = (pageSize[0], pageSize[1])
+        pageTopLeft = (pageSize[0], pageSize[3])
+        pageLowRight = (pageSize[0], pageSize[2])
+
+        pageRect = rg.Rectangle3d(rg.Plane.WorldXY, float(pageSize[2]), float(pageSize[3]))
+        return pageRect
 
 
     def ReadPDFPage(self, path):
@@ -323,18 +348,123 @@ class PDFIO(object):
             for page_num in range(len(reader.pages)):
                 page = reader.pages[page_num]
                 textOnPage = page.extract_text()
-                return page
+
+                if "/Annots" in page:
+                    annotations = []
+                    for annot in page["/Annots"]:
+                        annotations.append(annot.get_object())
+
+                return page, textOnPage, annotations
 
 
-    def GetBridgeItMarkerFromPDF(self, PDFPage):
+    def GetBridgeItMarkerFromPDF(self, PDFText):
         marker = []
-        textOnPage = PDFPage.extract_text()
-        for text in textOnPage.split("\n"):
+        for text in PDFText.split("\n"):
             if text[:10] == self.MARKER_KEY:
                 marker.append(text)
         
         return marker[0]
 
+
+    # def ComputeTransformationFromPDFToWorld(self, pageRec, targetRec):
+    #     #####SCALE
+    #     inputWidth = pageRec.Width
+    #     inputHeight = pageRec.Height
+        
+    #     targetWidth = targetRec.Width
+    #     targetHeight = targetRec.Height
+
+    #     scaleX = targetWidth / inputWidth
+    #     scaleY = targetHeight / inputHeight
+
+    #     #####TRANSLATION
+    #     inputCenter = pageRec.Center
+    #     targetCenter = targetRec.Center
+    #     translation = targetCenter - inputCenter
+
+    #     print(inputCenter)
+    #     print(scaleX)
+    #     print(scaleY)
+
+    #     #####ROTATION
+    #     inputPlane = pageRec.Plane
+    #     targetPlane = targetRec.Plane
+    #     rotation = rg.Transform.Rotation(inputPlane.XAxis, inputPlane.XAxis, inputCenter)
+    #     rotation *= rg.Transform.Rotation(targetPlane.YAxis, targetPlane.YAxis, targetCenter)
+
+
+    #     #####TRANSFORMATION
+    #     transformation = rg.Transform.Translation(translation)
+    #     transformation *= rotation
+    #     #transformation *= rg.Transform.Scale(inputCenter, scaleX, scaleX)
+    #     return transformation
+
+
+    def ExtractCommentsFromPdf(self, annotations, transformation):
+
+        for annot in annotations:
+            annotation = annot.get_object()
+            print(annotation)
+        
+            comment = annotation.get("/Contents", "").strip()
+            creationTime = annotation.get('/CreationDate',"").strip()
+            author = annotation.get('/T',"").strip()
+            annotationType = annotation.get("/Subtype","").strip()
+            position = None
+
+            if "/Rect" in annotation:
+                rect = annotation["/Rect"]
+                #print(rect)
+                x1, y1, x2, y2 = rect
+                x = (x1 + x2) / 2 
+                y = (y1 + y2) / 2 
+
+                print(type(x))
+                print(type(y))
+                fx = float(x)
+                fy = float(y)
+
+                print(type(fx))
+                print(type(fy))
+                
+                position = rg.Point3d(fx,fy, 0)
+            
+            if "/CL" in annotation:
+                arrowStartX = float(annotation["/CL"][0])
+                arrowStartY = float(annotation["/CL"][1])
+                position = rg.Point3d(arrowStartX, arrowStartY)
+            
+            if not position : 
+                continue
+
+            # transform the position 
+            position.Transform(transformation)
+            print(comment)
+            rs.AddTextDot(comment, position)
+
+
+            # if comment:
+            #     bridgeitComment = Comment.Comment()
+            #     date = datetime.strptime(creationTime[2:10], "%Y%m%d")
+            #     formatedTime = date.strftime("%m.%d.%Y")
+
+            #     self.SourceFileName = ""#TODO
+            #     self.SourceFileCreationDate = creationTime 
+            #     self.ImportDate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            #     self.Author = author
+            #     self.Text = comment
+            #     self.Point3d= None #TODO
+            #     self.ConnectedElementGuid = None
+            #     self.ConnectedElementName = None
+
+            #     #comments.append((position, comment, autor, formatedTime, annotationType, arrowStart))
+
+            # else:
+            #     pass
+            #     #print("noComment")
+            #     #revisit: what happens when there is no comment?
+
+        return "done"
 
 
 

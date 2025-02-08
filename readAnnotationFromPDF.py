@@ -34,75 +34,6 @@ class Bridgit(object):
         self.marker = None
         self.annotationType = []
 
-    def extractInformation(self, filePath):
-        with open(filePath, "rb") as file:
-            reader = pdf.PdfReader(file)
-            
-            
-            for page_num in range(len(reader.pages)):
-                page = reader.pages[page_num]
-                pageSize = page.mediabox
-
-                pageOrigin = (pageSize[0], pageSize[1])
-                pageTopLeft = (pageSize[0], pageSize[3])
-                pageLowRight = (pageSize[0], pageSize[2])
-
-                pageRec = rg.Rectangle3d(rg.Plane.WorldXY, float(pageSize[2]), float(pageSize[3]))
-
-                print(pageOrigin)
-                print(pageTopLeft)
-                print(pageLowRight)
-                
-                if "/Annots" in page:
-                    for annot in page["/Annots"]:
-                        annotation = annot.get_object()
-                        print(annotation)q
-                        
-
-                        comment = annotation.get("/Contents", "").strip()
-                        creationTime = annotation.get('/CreationDate',"").strip()
-                        author = annotation.get('/T',"").strip()
-                        annotationType = annotation.get("/Subtype","").strip()
-
-
-                        if "/Rect" in annotation:
-                            rect = annotation["/Rect"]
-                            #print(rect)
-                            x1, y1, x2, y2 = rect
-                            x = (x1 + x2) / 2 
-                            y = (y1 + y2) / 2 
-                            position = (float(x),float(y))
-                        else:
-                            position = "unknown" #revisit: what happens after this?
-
-                        
-                        if "/CL" in annotation:
-                            arrowStartX = float(annotation["/CL"][0])
-                            arrowStartY = float(annotation["/CL"][1])
-                            arrowStart = (arrowStartX, arrowStartY)
-                        
-                        else:
-                            arrowStart = None
-
-
-                        if comment:
-                            date = datetime.strptime(creationTime[2:10], "%Y%m%d")
-                            formatedTime = date.strftime("%m.%d.%Y")
-
-                            self.location = position
-                            self.author = author
-                            self.time = formatedTime
-                            self.marker = arrowStart
-                            self.annotationType = annotationType
-
-                            #comments.append((position, comment, autor, formatedTime, annotationType, arrowStart))
-
-                        else:
-                            pass
-                            #print("noComment")
-                            #revisit: what happens when there is no comment?
-
-        return "done"
 
 def extract_comments(path):
     comments = []
@@ -207,6 +138,7 @@ def addTextObjects(Annotations, pageRec, targetRec):
 
     for comment in Annotations:
         location = rg.Point3d(comment[0][0], comment[0][1], 0)
+        location.Transform(transformation)
         text_dot = rg.TextDot(f"{comment[2]} ({comment[3]}): {comment[1]}", location)
         sc.doc.Objects.AddTextDot(text_dot)
 
