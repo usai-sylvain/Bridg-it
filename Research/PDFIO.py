@@ -7,14 +7,17 @@ import Rhino.Geometry as rg
 
 
 
-def Execute():
-    exporter = PDFExporter()
+def ExecuteExportPDF():
+    exporter = PDFIO()
  
-    exporter.Sandbox()
-    
-    # exporter.Export()
+    exporter.Execute()
 
-class PDFExporter(object):
+def ExecuteImportPDF():
+    exporter = PDFIO()
+
+    
+
+class PDFIO(object):
 
     def __init__(self):
         # check requirements 
@@ -26,7 +29,7 @@ class PDFExporter(object):
         
 
 
-    def Sandbox(self):
+    def Execute(self):
         # get all view pages 
         page = self.GetAllPageViews()[0]
         
@@ -255,4 +258,4 @@ class PDFExporter(object):
 
 
 if __name__ == "__main__":
-    Execute()
+    # ExecuteExportPDF()
