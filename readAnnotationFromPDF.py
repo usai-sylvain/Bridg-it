@@ -23,7 +23,7 @@ def getMarker(path):
                 if text[:10] == "*BRIDGEIT*":
                     marker.append(text)
     
-    return marker
+    return marker[0]
 
 
 def extract_comments(path):
