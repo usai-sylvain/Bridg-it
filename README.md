@@ -10,6 +10,10 @@ Bridge-it aims to bring these annotations and comments back in the 3D model the 
 * python for MVP
 
 # Roadmap
+
+## prepare test case
+* 3d model
+* 
 ## Export PDF from Rhino with coordinate system marker 
 * identify the coordinate system of the view plane used for the pdf export.
 * identify the scale.
