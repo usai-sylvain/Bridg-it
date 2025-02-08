@@ -4,8 +4,9 @@ import scriptcontext
 from scriptcontext import doc
 import System 
 import Rhino.Geometry as rg
+import PyPDF2 as pdf
 
-
+# requirements: pyPDF2
 
 def ExecuteExportPDF():
     exporter = PDFIO()
@@ -13,7 +14,8 @@ def ExecuteExportPDF():
     exporter.Execute()
 
 def ExecuteImportPDF():
-    exporter = PDFIO()
+    importer = PDFIO()
+    importer.ExecuteImport()
 
     
 
@@ -26,6 +28,7 @@ class PDFIO(object):
 
         # set the DPI value 
         self.PDF_DPI = 72
+        self.MARKER_KEY = "*BRIDGEIT*"
         
 
 
@@ -53,10 +56,10 @@ class PDFIO(object):
         cornerHashes = []
         for i, corner in enumerate(corners) : 
             hash = self.HashCorner(corner, i)
-            # print hash
+            # print(hash)
             cornerHashes.append(hash)
             
-        bridgeHash = "*BRIDGEIT*%s"%("%".join(cornerHashes[0:3]))
+        bridgeHash = "%s%s"%(self.MARKER_KEY, "%".join(cornerHashes[0:3]))
 
         # make the page viewport active 
         page = self.GetPageViewFromDetailView(detailView)
@@ -137,6 +140,47 @@ class PDFIO(object):
         """
         return "I%s_X%.10f_Y%.10f_Z%.10f"%(cornerIndex, corner.X, corner.Y, corner.Z)
     
+    def UnhashCornerString(self, hashString):
+        """retrieve corners has point 3d from a hash string. 
+
+        returns a list of 3 point3d : lowerLeft, lowerRight, TopLeft
+        """
+        # get rid of the marker key 
+        hashString = hashString.Replace(self.MARKER_KEY, "")
+        # split with delimiter 
+        hashCorners = hashString.split("%")
+
+        arrCorners = [None, None, None]
+
+        for hashCorner in hashCorners : 
+
+            cornerParts = hashCorner.split("_")
+            index = None
+            x = None
+            y = None
+            z = None 
+
+            for part in cornerParts : 
+                # retrieve the marker 
+                marker = int(part[:1])
+                value = float(part[1:])
+                if marker == "I" : 
+                    index = value
+                if marker == "X" : 
+                    x = value
+                if marker == "Y" : 
+                    y = value
+                if marker == "Z" : 
+                    z = value
+            
+            if None in [index, x, y, z]:
+                print("Failed to read corner values")
+                return 
+            
+            arrCorners[index] = rg.Point3d(x, y, z)
+    
+        return arrCorners
+                
     
     def CreatePagePlaneFromPageCorner(self, pageCorners):
         """Return a plane created from the page corners. 
@@ -236,7 +280,15 @@ class PDFIO(object):
         fullPath = dialog.FileName
 
         return fullPath
-
+    
+    def GetImportPath(self):
+        dialog = Rhino.UI.OpenFileDialog()
+        dialog.InitialDirectory = Rhino.RhinoDoc.ActiveDoc.Path
+        dialog.DefaultExt = ".pdf"
+        dialog.Filter = ".pdf"
+        dialog.ShowOpenDialog()
+        fullPath = dialog.FileName
+        return fullPath
 
     @classmethod
     def AdvanceBakePoint(cls, point, name = None, color= None):
@@ -250,6 +302,43 @@ class PDFIO(object):
         return "Artificial amateurs aren't at all amazing \nAnalytically, I assault, animate things \nBroken barriers bounded by the bomb beat \nBuildings are broken, basically I'm bombarding \nCasually create catastrophes, casualties \nCanceling cats, got their canopies collapsing \nDetonate \na dime of dank daily doin' dough \nDemonstrations, Don Dada on the down low \nEating other editors with each and every energetic \nEpileptic episode, elevated etiquette \nFurious, fat, \nfabulous, fantastic"
 
 
+    def ExecuteImport(self):
+        # get a path
+        path = self.GetImportPath()
+        # find the page 
+        page = self.ReadPDFPage(path)
+
+        # find the marker text 
+        marker = self.GetBridgeItMarkerFromPDF(page)
+
+        corners = self.UnhashCornerString(marker)
+        
+        orientationPlane = rg.Plane(corners[0], corners[1] - corners[0], corners[2] - corners[0])
+        
+
+
+    def ReadPDFPage(self, path):
+        with open(path, "rb") as file:
+            reader = pdf.PdfReader(file)
+            for page_num in range(len(reader.pages)):
+                page = reader.pages[page_num]
+                textOnPage = page.extract_text()
+                return page
+
+
+    def GetBridgeItMarkerFromPDF(self, PDFPage):
+        marker = []
+        textOnPage = PDFPage.extract_text()
+        for text in textOnPage.split("\n"):
+            if text[:10] == self.MARKER_KEY:
+                marker.append(text)
+        
+        return marker[0]
+
+
+
+
 
 if __name__ == "__main__":
     # ExecuteExportPDF()
+    ExecuteImportPDF()
