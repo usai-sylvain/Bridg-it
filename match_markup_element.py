@@ -2,10 +2,6 @@ import Rhino
 import Rhino.Geometry as rg
 import rhinoscriptsyntax as rs
 
-
-#for i,comment in enumerate:
-#    comment.Point3D = 
-
 def select_object(name):
     message = "Select %s" % name
     obj_id = rs.GetObject(message)
@@ -29,7 +25,7 @@ def get_plane_normal(plane_id):
 
 def create_normal_line(markup, normal):
     if normal:
-        normal_scaled = rs.VectorScale(normal, 999)
+        normal_scaled = rs.VectorScale(normal,999999999 )
         reversed_normal = rs.VectorReverse(normal_scaled)
         end_point = rs.PointAdd(markup, reversed_normal)
         return Rhino.Geometry.LineCurve(markup, end_point)
@@ -82,11 +78,12 @@ def intersect_normal_brep(all_elements, normal_line_id, markup):
     # Return the closest element ID and intersection point
     return [closest_element, closest_point] if closest_element else None
 
-def main():
-    plane_id = select_object("PLANE")
-    if not plane_id:
-        print("No plane selected.")
-        return
+def match_markup_element(surface, list_comment:list): --> list
+    
+#    plane_id = select_object("PLANE")
+#    if not plane_id:
+#        print("No plane selected.")
+#        return
 
     markups_obj = rs.GetObjects("Select MARKUPS point", rs.filter.point)
     if not markups_obj:
@@ -105,7 +102,10 @@ def main():
     if not plane_normal:
         print("Could not determine plane normal.")
         return
-
+    
+    plane_id = surface 
+    
+    
     for markup in markups:
         normal_line = create_normal_line(markup, plane_normal)
 #        print(normal_line)
