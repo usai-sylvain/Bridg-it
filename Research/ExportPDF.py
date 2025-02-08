@@ -21,7 +21,9 @@ class PDFExporter():
         # get all view pages 
         page = self.GetAllPageViews()[0]
         
-        detailView = page.GetDetailViews()[0]
+        detailViews = page.GetDetailViews()
+        print detailViews
+        detailView = detailViews[0]
         self.DEBUG_3dSpaceToPage(detailView)
 
         
@@ -68,7 +70,6 @@ class PDFExporter():
         cameraPlane = self.GetRhinoViewportCameraPlane(viewport)
         scale = self.GetDetailToModelScale(detailViewObject)
         unitFactor = self.GetUnitScaleFactor()
-        print scale, unitFactor
         
         rhinoPageView = self.GetPageViewFromDetailView(detailViewObject)
         # get the page size 
@@ -76,8 +77,8 @@ class PDFExporter():
         height = rhinoPageView.PageHeight
         
                 
-        realWidth = width   * scale * unitFactor
-        realHeight = height * scale * unitFactor
+        realWidth = width   * scale / unitFactor
+        realHeight = height * scale / unitFactor
 
         # create a debug surface 
         pageRectangle = rg.Rectangle3d(cameraPlane, rg.Interval(-realWidth * 0.5, realWidth * 0.5), rg.Interval(-realHeight * 0.5, realHeight * 0.5))
@@ -102,12 +103,10 @@ class PDFExporter():
         """
         pageCorners = self.GetPageCornersFromDetailView(detailView)
         pagePlane = self.CreatePagePlaneFromPageCorner(pageCorners)
+        origin = pagePlane.Origin
 
         otherScale = self.GetModelToDetailScale(detailView)
-        unitFactor = self.GetUnitScaleFactor()
-
-        otherScale = otherScale * unitFactor
-
+        
         dbugSrf100 = rg.PlaneSurface(pagePlane, rg.Interval(0.0, width/otherScale), rg.Interval(0.0, height/otherScale))
         doc.Objects.AddSurface(dbugSrf100)
 
@@ -141,10 +140,13 @@ class PDFExporter():
 
     
     def GetModelToDetailScale(self, detailViewObject):
-        scaleType = detailViewObject.ScaleFormat.PageLengthToOne
+        # scaleType = detailViewObject.ScaleFormat.PageLengthToOne
         # get the detail view scale 
-        success, scaleString = detailViewObject.GetFormattedScale(scaleType)
-        scale = float(scaleString.split(":")[0])
+        success, scale= detailViewObject.GetFormattedScale(0)
+        scale = float(scale)
+        unitFactor = self.GetUnitScaleFactor()        
+        scale = scale * unitFactor
+
         return scale
 
     def GetRhinoViewportCameraPlane(self, RhinoViewport):
@@ -153,13 +155,22 @@ class PDFExporter():
         Args:
             RhinoViewport (RhinoViewport): a rhino viewport
         """
+        unitFactor = self.GetUnitScaleFactor()
+
         # retrieve the camera plane 
-        origin = RhinoViewport.CameraTarget
+        origin = RhinoViewport.CameraTarget 
         xAxis = RhinoViewport.CameraX
         yAxis = RhinoViewport.CameraY
-        zAxis = RhinoViewport.CameraZ            
+        zAxis = RhinoViewport.CameraZ
+
+        unitFactor = 1 #self.GetUnitScaleFactor()
+        # region ----- debug geometry  ----- 
+        # rs.ObjectColor(doc.Objects.AddPoint(origin), (255, 0, 0))
+        # rs.ObjectColor(doc.Objects.AddPoint(origin * unitFactor), (0, 255, 0))
+        # rs.ObjectColor(doc.Objects.AddPoint(origin / unitFactor), (0, 0, 255))
+        # endregion ----- debug geometry  ----- 
         
-        cameraPlane = rg.Plane(origin, xAxis, yAxis)
+        cameraPlane = rg.Plane(origin*unitFactor, xAxis*unitFactor, yAxis*unitFactor)
         return cameraPlane
 
         
