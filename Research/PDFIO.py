@@ -8,16 +8,16 @@ import Rhino.Geometry as rg
 
 
 def ExecuteExportPDF():
-    exporter = PDFExporter()
+    exporter = PDFIO()
  
     exporter.Execute()
 
 def ExecuteImportPDF():
-    exporter = PDFExporter()
+    exporter = PDFIO()
 
     
 
-class PDFExporter(object):
+class PDFIO(object):
 
     def __init__(self):
         # check requirements 
