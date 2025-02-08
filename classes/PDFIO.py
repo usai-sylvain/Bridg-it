@@ -318,20 +318,17 @@ class PDFIO(object):
         yAxis = corners[2] - corners[1]
         
         oppositeCorner = origin + xAxis + yAxis
-        rs.AddPoint(oppositeCorner)
+
         orientationPlane = rg.Plane(origin, xAxis, yAxis)
         
-        
         orientationRect = rg.Rectangle3d(orientationPlane, origin, oppositeCorner)
-        rs.AddRectangle(orientationPlane, orientationRect.Width, orientationRect.Height)
         
         pageRect = self.GetPageRect(page)
-        rs.AddRectangle(rg.Plane.WorldXY, pageRect.Width, pageRect.Height)
+
 
         planeToPlane = rg.Transform.PlaneToPlane(pageRect.Plane, orientationRect.Plane)
         scaleTransformation = rg.Transform.Scale(orientationRect.Plane.Origin, orientationRect.Width/pageRect.Width)
         fullTransformation = scaleTransformation * planeToPlane
-        print(fullTransformation)
     
         self.ExtractCommentsFromPdf(pdfAnnotations, fullTransformation)
         
@@ -369,40 +366,6 @@ class PDFIO(object):
                 marker.append(text)
         
         return marker[0]
-
-
-    # def ComputeTransformationFromPDFToWorld(self, pageRec, targetRec):
-    #     #####SCALE
-    #     inputWidth = pageRec.Width
-    #     inputHeight = pageRec.Height
-        
-    #     targetWidth = targetRec.Width
-    #     targetHeight = targetRec.Height
-
-    #     scaleX = targetWidth / inputWidth
-    #     scaleY = targetHeight / inputHeight
-
-    #     #####TRANSLATION
-    #     inputCenter = pageRec.Center
-    #     targetCenter = targetRec.Center
-    #     translation = targetCenter - inputCenter
-
-    #     print(inputCenter)
-    #     print(scaleX)
-    #     print(scaleY)
-
-    #     #####ROTATION
-    #     inputPlane = pageRec.Plane
-    #     targetPlane = targetRec.Plane
-    #     rotation = rg.Transform.Rotation(inputPlane.XAxis, inputPlane.XAxis, inputCenter)
-    #     rotation *= rg.Transform.Rotation(targetPlane.YAxis, targetPlane.YAxis, targetCenter)
-
-
-    #     #####TRANSFORMATION
-    #     transformation = rg.Transform.Translation(translation)
-    #     transformation *= rotation
-    #     #transformation *= rg.Transform.Scale(inputCenter, scaleX, scaleX)
-    #     return transformation
 
 
     def ExtractCommentsFromPdf(self, annotations, transformation):
