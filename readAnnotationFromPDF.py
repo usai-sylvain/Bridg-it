@@ -7,6 +7,25 @@ import rhinoscriptsyntax as rs
 
 filePath = "/Users/sjo/Desktop/Hackathon/Bridg-it/Research/Test1.pdf"
 
+def getMarker(path):
+    marker = []
+    with open(path, "rb") as file:
+        reader = pdf.PdfReader(file)
+        
+        
+        for page_num in range(len(reader.pages)):
+            page = reader.pages[page_num]
+            textOnPage = page.extract_text()
+
+            
+            for text in textOnPage.split("\n"):
+
+                if text[:10] == "*BRIDGEIT*":
+                    marker.append(text)
+    
+    return marker[0]
+
+
 def extract_comments(path):
     comments = []
     marker = []
@@ -148,7 +167,11 @@ pdfAnnotations, pageRec = extract_comments(filePath)
 addTextObjects(pdfAnnotations, pageRec, dummyRec)
 sc.doc.Objects.AddRectangle(pageRec)
 print("done")
-"""
+
 for comment in pdfAnnotations:
     print(comment)
-"""
+
+
+mark = getMarker(filePath)
+
+print(mark)
