@@ -69,7 +69,6 @@ class PDFExporter():
         # get the Camera plane from the viewport
         cameraPlane = self.GetRhinoViewportCameraPlane(viewport)
         scale = self.GetDetailToModelScale(detailViewObject)
-        unitFactor = self.GetUnitScaleFactor()
         
         rhinoPageView = self.GetPageViewFromDetailView(detailViewObject)
         # get the page size 
@@ -77,8 +76,8 @@ class PDFExporter():
         height = rhinoPageView.PageHeight
         
                 
-        realWidth = width   * scale / unitFactor
-        realHeight = height * scale / unitFactor
+        realWidth = width   * scale 
+        realHeight = height * scale 
 
         # create a debug surface 
         pageRectangle = rg.Rectangle3d(cameraPlane, rg.Interval(-realWidth * 0.5, realWidth * 0.5), rg.Interval(-realHeight * 0.5, realHeight * 0.5))
@@ -135,6 +134,10 @@ class PDFExporter():
         return scale
     
     def GetUnitScaleFactor(self):
+        # we don't solve that at the moment
+        if Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem != Rhino.UnitSystem.Millimeter : 
+            print("ExportPDF.Warning : model unit is not in mm !")
+        return 1 
         unitFactor = Rhino.RhinoMath.UnitScale(Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem, Rhino.UnitSystem.Millimeters) 
         return unitFactor
 
@@ -144,8 +147,7 @@ class PDFExporter():
         # get the detail view scale 
         success, scale= detailViewObject.GetFormattedScale(0)
         scale = float(scale)
-        unitFactor = self.GetUnitScaleFactor()        
-        scale = scale * unitFactor
+        scale = scale
 
         return scale
 
@@ -155,7 +157,7 @@ class PDFExporter():
         Args:
             RhinoViewport (RhinoViewport): a rhino viewport
         """
-        unitFactor = self.GetUnitScaleFactor()
+        
 
         # retrieve the camera plane 
         origin = RhinoViewport.CameraTarget 
@@ -163,14 +165,11 @@ class PDFExporter():
         yAxis = RhinoViewport.CameraY
         zAxis = RhinoViewport.CameraZ
 
-        unitFactor = 1 #self.GetUnitScaleFactor()
         # region ----- debug geometry  ----- 
-        # rs.ObjectColor(doc.Objects.AddPoint(origin), (255, 0, 0))
-        # rs.ObjectColor(doc.Objects.AddPoint(origin * unitFactor), (0, 255, 0))
-        # rs.ObjectColor(doc.Objects.AddPoint(origin / unitFactor), (0, 0, 255))
+        # self.AdvanceBakePoint(origin, "CameraOrigin", (255, 0, 0))
         # endregion ----- debug geometry  ----- 
-        
-        cameraPlane = rg.Plane(origin*unitFactor, xAxis*unitFactor, yAxis*unitFactor)
+
+        cameraPlane = rg.Plane(origin, xAxis, yAxis)
         return cameraPlane
 
         
@@ -187,7 +186,12 @@ class PDFExporter():
         return fullPath
 
 
-        
+    @classmethod
+    def AdvanceBakePoint(cls, point, name = None, color= None):
+        pointId = doc.Objects.AddPoint(point)
+        if name : rs.ObjectName(pointId, name)
+        if color : rs.ObjectColor(pointId, color)
+        return pointId
 
 
 
