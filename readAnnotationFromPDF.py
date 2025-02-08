@@ -15,7 +15,15 @@ def extract_comments(path):
         
         for page_num in range(len(reader.pages)):
             page = reader.pages[page_num]
-            #pageSize = 
+            pageSize = page.mediabox
+
+            pageOrigin = (pageSize[0], pageSize[1])
+            pageTopLeft = (pageSize[0], pageSize[3])
+            pageLowRight = (pageSize[0], pageSize[2])
+
+            print(pageOrigin)
+            print(pageTopLeft)
+            print(pageLowRight)
             
             if "/Annots" in page:
                 for annot in page["/Annots"]:
