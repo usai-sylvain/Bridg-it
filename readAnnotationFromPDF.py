@@ -1,4 +1,10 @@
+import PyPDF2 as pdf
+from datetime import datetime
 
+
+
+
+filePath = "/Users/sjo/Desktop/Hackathon/Testfile.pdf"
 
 def extract_comments(path):
     comments = []
@@ -24,8 +30,8 @@ def extract_comments(path):
 
                     print(annotationType)
                     print(autor)
-                    print(creationDate)
-                    #print(datetime.strptime(creationDate[2:], "%Y%m%d%H%M%S"))
+                    print(type(creationDate))
+                    print(datetime.strptime(creationDate, "%Y%m%d%H%M%S"))
 
                     
                     if "/Rect" in annotation:
@@ -36,10 +42,11 @@ def extract_comments(path):
                         y = (y1 + y2) / 2 
                         position = (float(x),float(y))
                     else:
-                        position = "Unknown"
+                        position = "Unknown" #revisit: what happens after this?
 
                     if comment:
-                        comments.append((comment, position))
+                        comments.append((position, comment, autor, annotationType))
+
                     else:
                         pass
                         #print("noComment")
@@ -49,8 +56,8 @@ def extract_comments(path):
 
 
 
+
 pdfAnnotations = extract_comments(filePath)
-""" print(pdfAnnotations)
+
 for comment in pdfAnnotations:
-    pass """
-    #print(comment)
+    print(comment)
