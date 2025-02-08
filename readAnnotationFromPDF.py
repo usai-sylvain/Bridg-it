@@ -138,6 +138,7 @@ def addTextObjects(Annotations, pageRec, targetRec):
 
     for comment in Annotations:
         location = rg.Point3d(comment[0][0], comment[0][1], 0)
+        location.Transform(transformation)
         text_dot = rg.TextDot(f"{comment[2]} ({comment[3]}): {comment[1]}", location)
         sc.doc.Objects.AddTextDot(text_dot)
 
