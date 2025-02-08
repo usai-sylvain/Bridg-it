@@ -19,9 +19,14 @@ class PDFExporter():
 
     def Sandbox(self):
         # get all view pages 
-        views = self.GetAllPageViews()
-        # get the coordinate system 
-        coordinate = self.GetCoordinateSystemFromPage(views[0])
+        page = self.GetAllPageViews()[0]
+        
+        detailView = page.GetDetailViews()[0]
+        page2 = self.GetPageViewFromDetailView(detailView)
+        print page.PageName, page2.PageName
+
+        
+
         # rs.AddPlaneSurface(coordinate, 500, 500)
 
     def Export(self):
@@ -48,43 +53,56 @@ class PDFExporter():
     def GetAllPageNames(self):
         return [p.PageName for p in self.GetAllPageViews()]
     
-
-    def GetCoordinateSystemFromPage(self, rhinoPageView):
-        """retrieves the viewport of this page and its coordinate system
+    def GetPageCornersFromDetailView(self, detailViewObject):
+        """retrieve the page this detial is on and return all 4 page corners in 3D model space.
 
         Args:
-            rhinoPageView (RhinoPageView): The view we want to use
+            detailViewObject (DetailViewObject): a detail view
+
+        Returns:
+            List<rg.Point3d> : a list of point 3d : Lower Left, Lower Right, TopRight, TopLeft
         """
+        # retrieve the viewport 
+        viewport = detailViewObject.Viewport
 
-        detailViews = rhinoPageView.GetDetailViews()
-        for detailViewObject in detailViews : 
-            # retrieve the viewport 
-            viewport = detailViewObject.Viewport
+        # get the Camera plane from the viewport
+        cameraPlane = self.GetRhinoViewportCameraPlane(viewport)
+        scale = self.GetDetailToModelScale(detailViewObject)
+        
+        rhinoPageView = self.GetPageViewFromDetailView(detailViewObject)
+        # get the page size 
+        width = rhinoPageView.PageWidth
+        height = rhinoPageView.PageHeight
+        
+                
+        realWidth = width   * scale
+        realHeight = height * scale
 
-            # get the Camera plane from the viewport
-            cameraPlane = self.GetRhinoViewportCameraPlane(viewport)
-            scale = self.GetDetailToModelScale(detailViewObject)
-            
+        # create a debug surface 
+        dbugSrf = rg.PlaneSurface(cameraPlane, rg.Interval(-realWidth * 0.5, realWidth * 0.5), rg.Interval(-realHeight * 0.5, realHeight * 0.5))
+        doc.Objects.AddSurface(dbugSrf)
 
-            # get the page size 
-            width = rhinoPageView.PageWidth
-            height = rhinoPageView.PageHeight
-            
-                    
-            realWidth = width   * scale
-            realHeight = height * scale
+        otherScale = self.GetModelToDetailScale(detailViewObject)
 
-            # create a debug surface 
-            dbugSrf = rg.PlaneSurface(cameraPlane, rg.Interval(-realWidth * 0.5, realWidth * 0.5), rg.Interval(-realHeight * 0.5, realHeight * 0.5))
-            doc.Objects.AddSurface(dbugSrf)
+        print(scale, otherScale)
+        dbugSrf10 = rg.PlaneSurface(cameraPlane, rg.Interval(-10 * 0.5 / otherScale, 10 * 0.5 / otherScale), rg.Interval(-10 * 0.5 / otherScale, 10 * 0.5 / otherScale))
+        doc.Objects.AddSurface(dbugSrf10)
 
-            otherScale = self.GetModelToDetailScale(detailViewObject)
-
-            print(scale, otherScale)
-            dbugSrf10 = rg.PlaneSurface(cameraPlane, rg.Interval(-10 * 0.5 / otherScale, 10 * 0.5 / otherScale), rg.Interval(-10 * 0.5 / otherScale, 10 * 0.5 / otherScale))
-            doc.Objects.AddSurface(dbugSrf10)
-
-            return cameraPlane
+        return cameraPlane
+    
+    def GetPageViewFromDetailView(self, detailViewObject):
+        """I didn't find a way to get the page information from a detail view so i'll look 
+        into all pages in the document until I find one that contains my detail view object
+        
+        returns the first page we find with a detailview that match the input detailview Id, None on failure.
+        """
+        for page in self.GetAllPageViews() :
+            # retrieve all detail view 
+            detailViews = page.GetDetailViews()
+            for detailView in detailViews : 
+                if detailView.Id == detailViewObject.Id:
+                    return page
+        
 
     def GetDetailToModelScale(self, detailViewObject):
         """ I didn't find a way to quickly access a detail view object scale other than reading the "formated" scale and removing the formating.
