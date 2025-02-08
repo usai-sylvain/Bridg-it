@@ -9,6 +9,9 @@ Bridge-it aims to bring these annotations and comments back in the 3D model the 
 * Rhino for 3D models 
 * python for MVP
 
+# Resources 
+https://drive.google.com/drive/folders/1fKvYx9CQI1Ge1QQD2Nd4pJelUiMq1YnE?usp=sharing
+
 # Roadmap
 
 ## prepare test case
