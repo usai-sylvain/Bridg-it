@@ -21,20 +21,58 @@ class PDFExporter(object):
         if Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem != Rhino.UnitSystem.Millimeters : 
             print("ExportPDF.Warning : model unit is not in mm !")
 
+        # set the DPI value 
+        self.PDF_DPI = 72
+        
+
+
     def Sandbox(self):
         # get all view pages 
         page = self.GetAllPageViews()[0]
         
         detailViews = page.GetDetailViews()
-        print detailViews
         detailView = detailViews[0]
-        self.DEBUG_3dSpaceToPage(detailView)
+        # self.DEBUG_3dSpaceToPage(detailView)
 
-        
+        hashTextId = self.CreateHashText(detailView)
+
+        # export 
+        self.Export(page)
+
+        # delete the hash text
+
 
         # rs.AddPlaneSurface(coordinate, 500, 500)
+    
+    def CreateHashText(self, detailView):
+        corners = self.GetPageCornersFromDetailView(detailView)
+        # get the corner hash 
+        cornerHashes = []
+        for i, corner in enumerate(corners) : 
+            hash = self.HashCorner(corner, i)
+            # print hash
+            cornerHashes.append(hash)
+            
+        bridgeHash = "*BRIDGEIT*%s"%("%".join(cornerHashes[0:3]))
 
-    def Export(self):
+        # make the page viewport active 
+        page = self.GetPageViewFromDetailView(detailView)
+
+        Rhino.RhinoDoc.ActiveDoc.Views.ActiveView = page
+        # add a text in the page for the first three corners 
+    
+        hashPlane = rg.Plane.WorldXY
+        hashPlane.Origin = rg.Point3d(10.0, 10.0, 0.0)
+        hashHeight = 1.0
+        hashFont = "Arial"
+
+        hashTextObjectId = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(bridgeHash, hashPlane, hashHeight, hashFont, False, True)
+        return hashTextObjectId
+
+
+
+
+    def Export(self, rhinoPage):
 
         # get a target path for our padf
         exportPath = self.GetExportPath()
@@ -46,9 +84,11 @@ class PDFExporter(object):
         # create a new instance of RhinoPDF exporter
         pdf = Rhino.FileIO.FilePdf.Create()
 
-        newPage = "create a new page here"
+        # make the detail page active 
+        Rhino.RhinoDoc.ActiveDoc.Views.ActiveView = rhinoPage
+        captureSettings = Rhino.Display.ViewCaptureSettings(rhinoPage, self.PDF_DPI)
+        pdf.AddPage(captureSettings)
         
-        pdf.AddPage(newPage)
         pdf.Write(exportPath)
 
 
@@ -87,6 +127,12 @@ class PDFExporter(object):
         pageRectangle = rg.Rectangle3d(cameraPlane, rg.Interval(-realWidth * 0.5, realWidth * 0.5), rg.Interval(-realHeight * 0.5, realHeight * 0.5))
         corners = [pageRectangle.Corner(i) for i in range(4)]
         return corners
+    
+    def HashCorner(self, corner, cornerIndex):
+        """convert a corner to a hash string            
+        """
+        return "I%s_X%.10f_Y%.10f_Z%.10f"%(cornerIndex, corner.X, corner.Y, corner.Z)
+    
     
     def CreatePagePlaneFromPageCorner(self, pageCorners):
         """Return a plane created from the page corners. 
