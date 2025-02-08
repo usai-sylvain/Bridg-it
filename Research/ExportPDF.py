@@ -14,8 +14,12 @@ def Execute():
     
     # exporter.Export()
 
-class PDFExporter():
+class PDFExporter(object):
 
+    def __init__(self):
+        # check requirements 
+        if Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem != Rhino.UnitSystem.Millimeters : 
+            print("ExportPDF.Warning : model unit is not in mm !")
 
     def Sandbox(self):
         # get all view pages 
@@ -135,8 +139,6 @@ class PDFExporter():
     
     def GetUnitScaleFactor(self):
         # we don't solve that at the moment
-        if Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem != Rhino.UnitSystem.Millimeter : 
-            print("ExportPDF.Warning : model unit is not in mm !")
         return 1 
         unitFactor = Rhino.RhinoMath.UnitScale(Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem, Rhino.UnitSystem.Millimeters) 
         return unitFactor
