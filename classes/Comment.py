@@ -132,7 +132,7 @@ class Comment(object):
         
     def MatchMarkupWithModelGeometry(self, geometryIds, pdfSourcePlane):
         """Finds the closest intersection point between a normal line and a set of Breps.
-        Search Tolerance is 50 cm ¯\_(ツ)_/¯ """
+        Search Tolerance is 50 cm '\_(--')_/' """
         closest_point = None
         closest_distance = float("inf")
         closest_element = None
