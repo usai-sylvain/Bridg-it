@@ -34,8 +34,7 @@ class PDFIO(object):
         # set the DPI value 
         self.PDF_DPI = 72
         self.MARKER_KEY = "*BRIDGEIT*"
-        
-
+    
 
     def Execute(self):
         # get all view pages 
@@ -74,12 +73,13 @@ class PDFIO(object):
         # add a text in the page for the first three corners 
     
         hashPlane = rg.Plane.WorldXY
-        hashPlane.Origin = rg.Point3d(10.0, 10.0, 0.0)
+        hashPlane.Origin = rg.Point3d(50.0, 50.0, 0.0)
         hashHeight = 1.0
         hashFont = "Arial"
 
 
         hashTextObjectId = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(bridgeHash, hashPlane, hashHeight, hashFont, False, True)
+        rs.ObjectColor(hashTextObjectId, (200, 200, 200))
 
         return hashTextObjectId
 
@@ -314,11 +314,12 @@ class PDFIO(object):
         path = self.GetImportPath()
         # find the page 
         page, pdfText, pdfAnnotations = self.ReadPDFPage(path)
-        pdfName = os.path.basename(path)
+        pdfName = os.path.basename(path)        
+        
 
         # find the marker text 
         marker = self.GetBridgeItMarkerFromPDF(pdfText)
-
+        print(marker)
         corners = self.UnhashCornerString(marker)
         origin = corners[0]
         xAxis = corners[1] - corners[0]
@@ -372,9 +373,8 @@ class PDFIO(object):
             for page_num in range(len(reader.pages)):
                 page = reader.pages[page_num]
                 textOnPage = page.extract_text()
-
-                if "/Annots" in page:
-                    annotations = []
+                annotations = []
+                if "/Annots" in page:    
                     for annot in page["/Annots"]:
                         annotations.append(annot.get_object())
 
@@ -384,10 +384,13 @@ class PDFIO(object):
     def GetBridgeItMarkerFromPDF(self, PDFText):
         marker = []
         for text in PDFText.split("\n"):
+            print(text[:10])
             if text[:10] == self.MARKER_KEY:
                 marker.append(text)
-        
-        return marker[0]
+        if marker :
+            return marker[0]
+        # else : 
+        #     print("no marker found")
 
 
     def ExtractCommentsFromPdf(self, annotations, transformation):
