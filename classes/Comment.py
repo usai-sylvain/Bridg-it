@@ -19,7 +19,7 @@ class Comment(object):
         self.ConnectedElementGuid = ConnectedElementGuid
         self.ConnectedElementName = ConnectedElementName
         self.RhinoID = None
-        self.IntersectionTolerance = 500.0
+        self.IntersectionTolerance = 0.1
 
     def SetRhinoID(self, value):
         self.RhinoID = value
@@ -143,13 +143,13 @@ class Comment(object):
         viewPlane = rg.Plane(point, normalVector)
 
         for id in geometryIds:
-            brep = rs.coercebrep(id)
+            brep = Rhino.RhinoDoc.ActiveDoc.Objects.Find(id).Geometry
             if not brep:
                 continue  # Skip invalid Breps
 
-            # Perform intersection
-            intersections = Rhino.Geometry.Intersect.Intersection.ProjectPointsToBreps([point], [brep], normalVector, self.IntersectionTolerance)
 
+            # Perform intersection
+            intersections = Rhino.Geometry.Intersect.Intersection.ProjectPointsToBreps([brep], [point], normalVector, self.IntersectionTolerance)
             # Ensure the intersection result is valid and contains intersection points
             if not intersections:
                 continue  # Skip if no valid intersection points

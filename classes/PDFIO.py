@@ -21,7 +21,8 @@ def ExecuteImportPDF():
 
 
 def main():
-    ExecuteExportPDF()
+    # ExecuteExportPDF()
+    ExecuteImportPDF()
     
 class PDFIO(object):
 
