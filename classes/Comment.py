@@ -56,6 +56,13 @@ class Comment(object):
         self.ConnectedElementName = value
     
 
+    def PrepareLayers(self):
+        self.CreateRootLayer("pdf_markups")  # Check or create main layer
+        markupLayer = self.CreateSublayers("pdf_markups", self.SourceFileName)  # Create a sublayer
+        if markupLayer : 
+            return markupLayer
+        return 
+
     @classmethod
     def CreateRootLayer(cls, layer_name, color=(0, 255, 0)):  # Default green color
         """Checks if the main layer exists; if not, creates it."""
@@ -95,15 +102,21 @@ class Comment(object):
         else:
             # Create the sublayer under the parent layer
             rs.AddLayer(name=sublayer_name, color=color, locked=False, parent=parent_layer)
-            rs.AddLayer(name="markups", color=color, locked=False, parent=sublayer_name)
+            markupLayer = rs.AddLayer(name="markups", color=color, locked=False, parent=sublayer_name)
             rs.AddLayer(name="pdf_image", color=color, locked=False, parent=sublayer_name)
             print("Sublayer '{}' created under '{}' with color {}.".format(full_sublayer_name, parent_layer, color))
+            return markupLayer
 
     def BakeMarkup(self):
         """Creates a TextDot with the given text at the specified location."""
         if self.Point3d:
             textdotID = rs.AddTextDot(self.Text, self.Point3d)
             self.SetRhinoID(textdotID)
+
+            markupLayer = self.PrepareLayers()
+            if markupLayer : 
+                rs.ObjectLayer(textdotID, markupLayer)
+
 
             self.BakeAttributes()
             if textdotID:
@@ -120,13 +133,14 @@ class Comment(object):
             textdot (_type_): _description_
             comment (_type_): _description_
         """
-        obj = self.GetRhinoID()
+        id = self.GetRhinoID()
+        obj = Rhino.RhinoDoc.ActiveDoc.Objects.Find(id)
 
         obj.Attributes.SetUserString("SourceFileName", self.SourceFileName)
         obj.Attributes.SetUserString("SourceFileCreationDate", self.SourceFileCreationDate)
         obj.Attributes.SetUserString("ImportDate", self.ImportDate ) 
         obj.Attributes.SetUserString("Author", self.Author)
-        obj.Attributes.SetUserString("ConnectedElementGuid", self.ConnectedElementGuid) 
+        obj.Attributes.SetUserString("ConnectedElementGuid", "%s"%self.ConnectedElementGuid) 
         obj.Attributes.SetUserString("ConnectedElementName", self.ConnectedElementName) 
         obj.CommitChanges()    
         
@@ -162,7 +176,7 @@ class Comment(object):
                     dist = viewPlane.DistanceTo(intersection) 
                     if dist > 0 : 
                         distances.append(dist)
-                        positivePoints.append(intersections)
+                        positivePoints.append(intersection)
                             
             distances, positivePoints = zip(*sorted(zip(distances, positivePoints)))
             bestPoint = positivePoints[0]

@@ -344,6 +344,8 @@ class PDFIO(object):
         allBrepIds = self.GetAllModelBrepIds()
         for c in arrComments : 
             c.MatchMarkupWithModelGeometry(allBrepIds, orientationPlane)
+            c.BakeMarkup()
+        
     
     def GetAllModelBrepIds(self):
         """ dirty getter to get all breps in the model """
@@ -417,13 +419,14 @@ class PDFIO(object):
             if "/CL" in annotation:
                 arrowStartX = float(annotation["/CL"][0])
                 arrowStartY = float(annotation["/CL"][1])
-                position = rg.Point3d(arrowStartX, arrowStartY)
+                position = rg.Point3d(arrowStartX, arrowStartY, 0)
             
             if not position : 
                 continue
 
             # transform the position 
             position.Transform(transformation)
+            print("position = ", position, type(position))
 
             bComment = Comment.Comment("source", creationTime, author, comment, position, None, None)
             arrBridgeItComments.append(bComment)
