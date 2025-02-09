@@ -19,7 +19,6 @@ def ExecuteImportPDF():
     importer.ExecuteImport()
 
     
-
 class PDFIO(object):
 
     def __init__(self):
@@ -405,28 +404,6 @@ class PDFIO(object):
             # transform the position 
             position.Transform(transformation)
             rs.AddTextDot(comment, position)
-
-
-            # if comment:
-            #     bridgeitComment = Comment.Comment()
-            #     date = datetime.strptime(creationTime[2:10], "%Y%m%d")
-            #     formatedTime = date.strftime("%m.%d.%Y")
-
-            #     self.SourceFileName = ""#TODO
-            #     self.SourceFileCreationDate = creationTime 
-            #     self.ImportDate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            #     self.Author = author
-            #     self.Text = comment
-            #     self.Point3d= None #TODO
-            #     self.ConnectedElementGuid = None
-            #     self.ConnectedElementName = None
-
-            #     #comments.append((position, comment, autor, formatedTime, annotationType, arrowStart))
-
-            # else:
-            #     pass
-            #     #print("noComment")
-            #     #revisit: what happens when there is no comment?
 
         return "done"
 
