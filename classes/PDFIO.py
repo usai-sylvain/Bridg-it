@@ -8,6 +8,7 @@ import PyPDF2 as pdf
 from enum import Enum
 import datetime
 import Comment
+import os 
 # requirements: pyPDF2
 
 def ExecuteExportPDF():
@@ -312,6 +313,7 @@ class PDFIO(object):
         path = self.GetImportPath()
         # find the page 
         page, pdfText, pdfAnnotations = self.ReadPDFPage(path)
+        pdfName = os.path.basename(path)
 
         # find the marker text 
         marker = self.GetBridgeItMarkerFromPDF(pdfText)
@@ -334,8 +336,21 @@ class PDFIO(object):
         scaleTransformation = rg.Transform.Scale(orientationRect.Plane.Origin, orientationRect.Width/pageRect.Width)
         fullTransformation = scaleTransformation * planeToPlane
     
-        self.ExtractCommentsFromPdf(pdfAnnotations, fullTransformation)
-        
+        arrComments = self.ExtractCommentsFromPdf(pdfAnnotations, fullTransformation)
+        [c.SetSourceFileName(pdfName) for c in arrComments]
+
+        # match the comments with model geometry
+        allBrepIds = self.GetAllModelBrepIds()
+        for c in arrComments : 
+            c.MatchMarkupWithModelGeometry(allBrepIds, orientationPlane)
+    
+    def GetAllModelBrepIds(self):
+        """ dirty getter to get all breps in the model """
+        allBrepIds = []
+        for o in doc.Objects: 
+            if type(o) == Rhino.DocObjects.BrepObject : 
+                allBrepIds.append(o.Id)
+        return allBrepIds
 
     def GetPageRect(self, page):
         pageSize = page.mediabox
@@ -373,6 +388,7 @@ class PDFIO(object):
 
 
     def ExtractCommentsFromPdf(self, annotations, transformation):
+        arrBridgeItComments = []
 
         for annot in annotations:
             annotation = annot.get_object()
@@ -407,9 +423,13 @@ class PDFIO(object):
 
             # transform the position 
             position.Transform(transformation)
-            rs.AddTextDot(comment, position)
 
-        return "done"
+            bComment = Comment.Comment("source", creationTime, author, comment, position, None, None)
+            arrBridgeItComments.append(bComment)
+            
+            # debug Geometry
+            # rs.AddTextDot(comment, position)
+        return arrBridgeItComments
 
 
 
