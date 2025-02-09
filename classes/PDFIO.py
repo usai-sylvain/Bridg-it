@@ -73,6 +73,7 @@ class PDFIO(object):
         hashHeight = 1.0
         hashFont = "Arial"
 
+
         hashTextObjectId = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(bridgeHash, hashPlane, hashHeight, hashFont, False, True)
 
         return hashTextObjectId
@@ -403,7 +404,6 @@ class PDFIO(object):
 
             # transform the position 
             position.Transform(transformation)
-            print(comment)
             rs.AddTextDot(comment, position)
 
 
