@@ -19,7 +19,7 @@ class Comment(object):
         self.ConnectedElementGuid = ConnectedElementGuid
         self.ConnectedElementName = ConnectedElementName
         self.RhinoID = None
-        self.IntersectionTolerance = 0.1
+        self.IntersectionTolerance = 1.0
 
     def SetRhinoID(self, value):
         self.RhinoID = value
@@ -174,10 +174,11 @@ class Comment(object):
             for intersection in intersections :
                     # project the result intersection on the brep (this is necessary because of the search threshold)
                     dist = viewPlane.DistanceTo(intersection) 
-                    if dist > 0 : 
+                    print("inte", intersection)
+                    if True : #dist > 0 : 
                         distances.append(dist)
                         positivePoints.append(intersection)
-                            
+                       
             distances, positivePoints = zip(*sorted(zip(distances, positivePoints)))
             bestPoint = positivePoints[0]
             bestDistance = distances[0]

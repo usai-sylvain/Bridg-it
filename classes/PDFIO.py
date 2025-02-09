@@ -24,6 +24,8 @@ def main():
     # ExecuteExportPDF()
     ExecuteImportPDF()
     
+    return
+    
 class PDFIO(object):
 
     def __init__(self):
@@ -45,7 +47,6 @@ class PDFIO(object):
         # self.DEBUG_3dSpaceToPage(detailView)
 
         hashTextId = self.CreateHashText(detailView)
-    
 
         # export 
         self.Export(page)
@@ -384,7 +385,7 @@ class PDFIO(object):
     def GetBridgeItMarkerFromPDF(self, PDFText):
         marker = []
         for text in PDFText.split("\n"):
-            print(text[:10])
+            # print(text[:10])
             if text[:10] == self.MARKER_KEY:
                 marker.append(text)
         if marker :
@@ -443,3 +444,4 @@ class PDFIO(object):
 
 if __name__ == "__main__":
     main()
+    print("donzo")
