@@ -2,6 +2,7 @@ from datetime import datetime
 import PyPDF2 as pdf
 import rhinoscriptsyntax as rs
 import Rhino 
+import Rhino.Geometry as rg
 
 
 class Comment(object):  
@@ -18,6 +19,7 @@ class Comment(object):
         self.ConnectedElementGuid = ConnectedElementGuid
         self.ConnectedElementName = ConnectedElementName
         self.RhinoID = None
+        self.IntersectionTolerance = 500.0
 
     def SetRhinoID(self, value):
         self.RhinoID = value
@@ -126,9 +128,61 @@ class Comment(object):
         obj.Attributes.SetUserString("Author", self.Author)
         obj.Attributes.SetUserString("ConnectedElementGuid", self.ConnectedElementGuid) 
         obj.Attributes.SetUserString("ConnectedElementName", self.ConnectedElementName) 
-        obj.CommitChanges()
+        obj.CommitChanges()    
+        
+    def MatchMarkupWithModelGeometry(self, geometryIds, pdfSourcePlane):
+        """Finds the closest intersection point between a normal line and a set of Breps.
+        Search Tolerance is 50 cm ¯\_(ツ)_/¯ """
+        closest_point = None
+        closest_distance = float("inf")
+        closest_element = None
 
-    
+        point = self.Point3d
+        normalVector = pdfSourcePlane.ZAxis * -1
+
+        viewPlane = rg.Plane(point, normalVector)
+
+        for id in geometryIds:
+            brep = rs.coercebrep(id)
+            if not brep:
+                continue  # Skip invalid Breps
+
+            # Perform intersection
+            intersections = Rhino.Geometry.Intersect.Intersection.ProjectPointsToBreps([point], [brep], normalVector, self.IntersectionTolerance)
+
+            # Ensure the intersection result is valid and contains intersection points
+            if not intersections:
+                continue  # Skip if no valid intersection points
+
+
+            distances = [] 
+            positivePoints = [] 
+            for intersection in intersections :
+                    # project the result intersection on the brep (this is necessary because of the search threshold)
+                    dist = viewPlane.DistanceTo(intersection) 
+                    if dist > 0 : 
+                        distances.append(dist)
+                        positivePoints.append(intersections)
+                            
+            distances, positivePoints = zip(*sorted(zip(distances, positivePoints)))
+            bestPoint = positivePoints[0]
+            bestDistance = distances[0]
+
+            # Compare with global closest point
+            if bestDistance < closest_distance:
+                closest_distance = bestDistance
+                closest_point = bestPoint
+                closest_element = id  # Store object ID
+
+            # except Exception as e:
+            #     print("Error processing intersections")
+            #     continue  # Move to the next element instead of exiting the function
+
+        if closest_point :
+            # set the attributes according to the matched brep 
+            self.SetConnectedElementGuid(closest_element)
+            self.SetPoint3d(closest_point)
+            self.SetConnectedElementName(rs.ObjectName(closest_element))
 
 
 
