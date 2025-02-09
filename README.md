@@ -5,6 +5,12 @@ The revision process in the construction industry still heavily relies on the ex
 
 Bridge-it aims to bring these annotations and comments back in the 3D model the PDF comes from
 
+# How-to-use
+The current version is a POC demonstration export & import of annotated pdfs.
+Until a proper UI is implemented, the magic happens in the `PDFIO.py` class : the `main()` method contains two method : `ExecuteExportPDF()` and `ExectureImportPDF()` that can be commented in and out at will. 
+Run the script using Rhino's very own "ScriptEditor". Make sure to pip-install the `PyPDF2` package beforehand and check the list of known limitation at the end this page.
+
+
 # Tech stack
 * Rhino for 3D models 
 * python for MVP
@@ -55,3 +61,13 @@ https://drive.google.com/drive/folders/1fKvYx9CQI1Ge1QQD2Nd4pJelUiMq1YnE?usp=sha
 
 ## Status management
 * accept/reject issues from rhino and update it in the pdf accordingly.
+
+
+# Known Limitations 
+Beyond the flagrant lack of UI, the main problem user could face during utilisation is a feeling of pure joy and bliss which can be intimidating at first.
+Minor known limitations includes :
+
+* Model unit needs to be set to millimieter. Scale conflict resolution between page and model is not yet robust enough.
+* Tolerance for geometrically matching the annotation to model objects can be tweaked in the `Comment.IntersectionTolerance`. 
+* PDF DPi needs to be fixed at 72 DPis for now. 
+* pyPDF2 turned out to be a weak choice as it ca only process a limited amount of text in a PDF page. This limitation does not apply to the amount of comments but to the amount of "writing" in the page and prevent us from retrieving our precious "BridgeIt" key. Different PDF importer library has been identified but needs to be implemented. see https://stackoverflow.com/questions/35090948/pypdf2-wont-extract-all-text-from-pdf 
